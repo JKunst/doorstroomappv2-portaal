@@ -1,0 +1,9 @@
+streamlit>=1.25
+altair==4.2.2
+numpy
+openpyxl
+pandas
+plotly==6.5.0
+PyJWT==2.9.0
+st_pages
+streamlit-extras

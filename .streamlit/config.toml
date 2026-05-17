@@ -1,0 +1,7 @@
+[theme]
+# Corderius College huisstijl
+primaryColor        = "#0D5259"   # Donkerteal
+backgroundColor     = "#FFFFFF"   # Wit
+secondaryBackgroundColor = "#F4F6F7"  # Lichtgrijs
+textColor           = "#1A1A2E"   # Bijna zwart
+font                = "sans serif"
