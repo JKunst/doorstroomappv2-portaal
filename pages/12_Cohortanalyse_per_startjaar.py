@@ -7,22 +7,22 @@ import plotly.graph_objects as go
 from auth import check_jwt
 from components.data import load_data
 from components.styling import apply_styling
-from components.dashboard_helpers import kale_fase, KLEUREN, geldige_jaargrens
 
 apply_styling()
 check_jwt()
 
 st.title("🧭 Cohortanalyse per startjaar")
 st.markdown(
-    "Volg een startcohort — alle leerlingen die in een bepaald schooljaar in een "
-    "voorexamen- of examenfase zaten — naar hun **uiteindelijke uitkomst**. "
-    "Zo zie je per cohort welk deel uiteindelijk is geslaagd, afgestroomd, "
-    "afgewezen of vertrokken."
+    "Volg een **instroomcohort** — alle leerlingen die zich in een bepaald jaar op "
+    "school inschreven — naar hun uiteindelijke uitkomst. Zo zie je per startjaar "
+    "welk deel uiteindelijk slaagde, afstroomde, werd afgewezen of vertrok. "
+    "Filterbaar op instroomniveau (op basis van het basisschooladvies)."
 )
 
 df = load_data()
 df = df.sort_values(["Leerlingnummer", "Schooljaar"])
-df["fk"] = kale_fase(df["Leerfase (afk)"])
+
+MIN_COHORT = 50
 
 RES_KLEUR = {
     "Geslaagd": "#0D5259",
@@ -33,6 +33,25 @@ RES_KLEUR = {
     "Nog onderweg/onbekend": "#D9D4C7",
 }
 RES_VOLGORDE = list(RES_KLEUR.keys())
+
+
+def instroomniveau(advies):
+    if pd.isna(advies):
+        return "Onbekend"
+    a = str(advies)
+    if a.startswith("VWO"):
+        return "Vwo"
+    if a.startswith("HAVO / VWO"):
+        return "Havo/vwo"
+    if a.startswith("HAVO"):
+        return "Havo"
+    if "VMBO (g)t / HAVO" in a:
+        return "Mavo/havo"
+    if a.startswith("VMBO (g)t") or a.startswith("VMBO k / (g)t"):
+        return "Mavo"
+    if a.startswith("VMBO k") or a.startswith("VMBO b"):
+        return "Kader/basis"
+    return "Overig"
 
 
 def eindresultaat(d):
@@ -49,37 +68,41 @@ def eindresultaat(d):
     return "Nog onderweg/onbekend"
 
 
-@st.cache_data(show_spinner="Cohort volgen…")
-def cohort_resultaten(startfase: str) -> pd.DataFrame:
-    """Voor elke leerling in startfase: het eindresultaat (laatste status vanaf cohortjaar)."""
-    sel = df[df["fk"] == startfase][["Leerlingnummer", "Schooljaar"]].drop_duplicates()
-    lo, hi = geldige_jaargrens(df)
-    if lo is not None:
-        sel = sel[(sel["Schooljaar"] >= lo) & (sel["Schooljaar"] <= hi)]
-    # laatste record per leerling (over de hele historie) — eindstatus
-    laatste = df.groupby("Leerlingnummer").last()["Doorstroom"]
-    rows = []
-    for ln, sj in zip(sel["Leerlingnummer"], sel["Schooljaar"]):
-        rows.append({"startjaar": int(sj), "resultaat": eindresultaat(laatste.get(ln))})
-    return pd.DataFrame(rows)
+@st.cache_data(show_spinner="Cohorten samenstellen…")
+def cohort_tabel(df: pd.DataFrame) -> pd.DataFrame:
+    insch_jaar = pd.to_datetime(df["Inschrijvingsdatum"]).dt.year
+    werk = df.assign(_insch=insch_jaar)
+    grp = werk.groupby("Leerlingnummer")
+    out = pd.DataFrame({
+        "startjaar": grp["_insch"].first(),
+        "advies": grp["Basisschooladvies"].first(),
+        "laatste": grp["Doorstroom"].last(),
+    }).reset_index(drop=True)
+    out["niveau"] = out["advies"].apply(instroomniveau)
+    out["resultaat"] = out["laatste"].apply(eindresultaat)
+    return out
 
 
-STARTFASEN = {
-    "Havo voorexamen (h4)": "h4",
-    "Vwo voorexamen (v4)": "v4",
-    "Mavo voorexamen (t3)": "t3",
-    "Havo examen (h5)": "h5",
-    "Vwo examen (v6)": "v6",
-    "Mavo examen (t4)": "t4",
-}
+basis = cohort_tabel(df)
 
-keuze = st.selectbox("Kies een startcohort", list(STARTFASEN.keys()))
-fase = STARTFASEN[keuze]
+niveaus_aanwezig = [n for n in
+                    ["Vwo", "Havo/vwo", "Havo", "Mavo/havo", "Mavo", "Kader/basis"]
+                    if n in set(basis["niveau"])]
+keuze_niveau = st.multiselect(
+    "Instroomniveau (leeg = alle niveaus samen)",
+    options=niveaus_aanwezig,
+    default=[],
+)
 
-data = cohort_resultaten(fase)
-if data.empty:
-    st.info("Geen data voor dit cohort.")
+data = basis if not keuze_niveau else basis[basis["niveau"].isin(keuze_niveau)]
+
+cohort_grootte = data["startjaar"].value_counts()
+geldige_jaren = sorted(j for j, n in cohort_grootte.items() if n >= MIN_COHORT)
+if not geldige_jaren:
+    st.info(f"Geen cohorten met minimaal {MIN_COHORT} leerlingen voor deze selectie.")
     st.stop()
+
+data = data[data["startjaar"].isin(geldige_jaren)]
 
 cnt = pd.crosstab(data["startjaar"], data["resultaat"])
 for c in RES_VOLGORDE:
@@ -90,7 +113,8 @@ tot = cnt.sum(axis=1)
 perc = cnt.div(tot, axis=0) * 100
 jaren = [int(x) for x in cnt.index]
 
-# ── Gestapelde staafgrafiek (100% per cohort) ────────────────────────────────
+titel_suffix = "alle niveaus" if not keuze_niveau else ", ".join(keuze_niveau)
+
 fig = go.Figure()
 for c in RES_VOLGORDE:
     fig.add_trace(go.Bar(
@@ -100,51 +124,46 @@ for c in RES_VOLGORDE:
     ))
 fig.update_layout(
     barmode="stack",
-    title=f"Eindresultaat per startcohort — {keuze}",
+    title=f"Eindresultaat per instroomcohort — {titel_suffix}",
     height=480, plot_bgcolor="white", paper_bgcolor="white",
     yaxis=dict(title="Aandeel van cohort", ticksuffix="%", range=[0, 100]),
-    xaxis=dict(title="Startjaar cohort", dtick=1),
+    xaxis=dict(title="Inschrijvingsjaar", dtick=1),
     font=dict(family="Inter, Segoe UI, sans-serif", color="#1A1A2E"),
     legend=dict(orientation="h", yanchor="bottom", y=-0.22, xanchor="center", x=0.5),
     margin=dict(t=60, b=40, l=50, r=20),
 )
 st.plotly_chart(fig, width="stretch")
 st.caption(
-    "Elke balk is één startcohort en telt op tot 100%. Recente cohorten staan nog "
-    "deels op 'Nog onderweg' omdat het examen nog moet komen."
+    f"Elke balk is één instroomcohort (\u2265 {MIN_COHORT} leerlingen) en telt op tot 100%. "
+    "Recente cohorten staan nog deels op 'Nog onderweg' omdat hun examen nog moet komen."
 )
 
-# ── Focus: geslaagd vs afgestroomd ───────────────────────────────────────────
 st.subheader("Geslaagd versus afgestroomd")
 st.markdown(
-    "Twee lijnen die de kern samenvatten: het percentage dat uiteindelijk **slaagde** "
-    "en het percentage dat **afstroomde** (naar een lager niveau)."
+    "Het percentage van elk instroomcohort dat uiteindelijk **slaagde** en het "
+    "percentage dat als eindstatus **afstroomde**."
 )
-
-afgerond = perc[perc.index < cnt.index.max()] if len(cnt) > 1 else perc
 fig2 = go.Figure()
 fig2.add_trace(go.Scatter(
-    x=[int(x) for x in afgerond.index], y=afgerond["Geslaagd"],
-    name="Geslaagd", mode="lines+markers",
+    x=jaren, y=perc["Geslaagd"], name="Geslaagd", mode="lines+markers",
     line=dict(color=RES_KLEUR["Geslaagd"], width=3),
 ))
 fig2.add_trace(go.Scatter(
-    x=[int(x) for x in afgerond.index], y=afgerond["Afgestroomd"],
-    name="Afgestroomd", mode="lines+markers",
+    x=jaren, y=perc["Afgestroomd"], name="Afgestroomd", mode="lines+markers",
     line=dict(color=RES_KLEUR["Afgestroomd"], width=3),
 ))
 fig2.update_layout(
     height=380, plot_bgcolor="white", paper_bgcolor="white",
     yaxis=dict(title="% van cohort", ticksuffix="%"),
-    xaxis=dict(title="Startjaar cohort", dtick=1),
+    xaxis=dict(title="Inschrijvingsjaar", dtick=1),
     font=dict(family="Inter, Segoe UI, sans-serif", color="#1A1A2E"),
     legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
     margin=dict(t=20, b=40, l=50, r=20),
 )
 st.plotly_chart(fig2, width="stretch")
 
-with st.expander("Toon tabel"):
+with st.expander("Toon tabel met percentages"):
     toon = perc.copy()
-    toon.index.name = "Startjaar"
+    toon.index.name = "Inschrijvingsjaar"
     st.dataframe(toon.style.format("{:.1f}%"), width="stretch")
-    st.caption(f"Aantallen per cohort: {dict(zip(jaren, [int(x) for x in tot]))}")
+    st.caption(f"Cohortgrootte: {dict(zip(jaren, [int(x) for x in tot]))}")
