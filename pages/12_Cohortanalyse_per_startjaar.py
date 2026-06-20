@@ -13,10 +13,10 @@ check_jwt()
 
 st.title("🧭 Cohortanalyse per startjaar")
 st.markdown(
-    "Volg een **instroomcohort** — alle leerlingen die zich in een bepaald jaar op "
-    "school inschreven — naar hun uiteindelijke uitkomst. Zo zie je per startjaar "
-    "welk deel uiteindelijk slaagde, afstroomde, werd afgewezen of vertrok. "
-    "Filterbaar op instroomniveau (op basis van het basisschooladvies)."
+    "Volg een **startcohort** naar de uiteindelijke uitkomst. Het startjaar is het "
+    "jaar waarin de leerling in **leerjaar 1** zat (teruggerekend uit leerfase en "
+    "schooljaar), zodat zij-instromers in een hoger leerjaar in het juiste cohort "
+    "vallen. Filterbaar op instroomniveau (basisschooladvies)."
 )
 
 df = load_data()
@@ -33,6 +33,11 @@ RES_KLEUR = {
     "Nog onderweg/onbekend": "#D9D4C7",
 }
 RES_VOLGORDE = list(RES_KLEUR.keys())
+
+
+def _is_echte_fase(f):
+    """True voor een echte leerfase (t1, h4, v6, ...) en niet een advies-string."""
+    return isinstance(f, str) and len(f) >= 2 and f[0] in "thv" and f[-1].isdigit()
 
 
 def instroomniveau(advies):
@@ -70,17 +75,30 @@ def eindresultaat(d):
 
 @st.cache_data(show_spinner="Cohorten samenstellen…")
 def cohort_tabel(df: pd.DataFrame) -> pd.DataFrame:
-    insch_jaar = pd.to_datetime(df["Inschrijvingsdatum"]).dt.year
-    werk = df.assign(_insch=insch_jaar)
-    grp = werk.groupby("Leerlingnummer")
-    out = pd.DataFrame({
-        "startjaar": grp["_insch"].first(),
-        "advies": grp["Basisschooladvies"].first(),
-        "laatste": grp["Doorstroom"].last(),
-    }).reset_index(drop=True)
-    out["niveau"] = out["advies"].apply(instroomniveau)
-    out["resultaat"] = out["laatste"].apply(eindresultaat)
-    return out
+    """
+    Eén rij per leerling met:
+    - startjaar: het leerjaar-1-equivalent (schooljaar van eerste echte leerfase
+      minus (leerjaar - 1)), zodat zij-instromers correct worden ingedeeld
+    - niveau: instroomniveau uit het basisschooladvies
+    - resultaat: de uiteindelijke uitkomst (laatste doorstroomstatus)
+    """
+    fk = df["Leerfase (afk)"].astype(str).str.replace("_doublure", "", regex=False)
+    echt = df[fk.map(_is_echte_fase)].copy()
+    echt["_fk"] = fk[fk.map(_is_echte_fase)]
+
+    eerste = echt.groupby("Leerlingnummer").agg(
+        schooljaar=("Schooljaar", "first"), fase=("_fk", "first")
+    )
+    eerste["startlj"] = eerste["fase"].str[-1].astype(int)
+    eerste["startjaar"] = eerste["schooljaar"] - (eerste["startlj"] - 1)
+
+    advies = df.groupby("Leerlingnummer")["Basisschooladvies"].first()
+    laatste = df.groupby("Leerlingnummer")["Doorstroom"].last()
+
+    out = eerste[["startjaar"]].join(advies).join(laatste)
+    out["niveau"] = out["Basisschooladvies"].apply(instroomniveau)
+    out["resultaat"] = out["Doorstroom"].apply(eindresultaat)
+    return out.reset_index(drop=True)
 
 
 basis = cohort_tabel(df)
@@ -124,46 +142,22 @@ for c in RES_VOLGORDE:
     ))
 fig.update_layout(
     barmode="stack",
-    title=f"Eindresultaat per instroomcohort — {titel_suffix}",
-    height=480, plot_bgcolor="white", paper_bgcolor="white",
+    title=f"Eindresultaat per startcohort — {titel_suffix}",
+    height=520, plot_bgcolor="white", paper_bgcolor="white",
     yaxis=dict(title="Aandeel van cohort", ticksuffix="%", range=[0, 100]),
-    xaxis=dict(title="Inschrijvingsjaar", dtick=1),
+    xaxis=dict(title="Startjaar (leerjaar 1)", dtick=1),
     font=dict(family="Inter, Segoe UI, sans-serif", color="#1A1A2E"),
-    legend=dict(orientation="h", yanchor="bottom", y=-0.22, xanchor="center", x=0.5),
+    legend=dict(orientation="h", yanchor="bottom", y=-0.18, xanchor="center", x=0.5),
     margin=dict(t=60, b=40, l=50, r=20),
 )
 st.plotly_chart(fig, width="stretch")
 st.caption(
-    f"Elke balk is één instroomcohort (\u2265 {MIN_COHORT} leerlingen) en telt op tot 100%. "
-    "Recente cohorten staan nog deels op 'Nog onderweg' omdat hun examen nog moet komen."
+    f"Elke balk is één startcohort (\u2265 {MIN_COHORT} leerlingen) en telt op tot 100%. "
+    "Recente cohorten staan nog grotendeels op 'Nog onderweg' omdat hun examen nog moet komen."
 )
-
-st.subheader("Geslaagd versus afgestroomd")
-st.markdown(
-    "Het percentage van elk instroomcohort dat uiteindelijk **slaagde** en het "
-    "percentage dat als eindstatus **afstroomde**."
-)
-fig2 = go.Figure()
-fig2.add_trace(go.Scatter(
-    x=jaren, y=perc["Geslaagd"], name="Geslaagd", mode="lines+markers",
-    line=dict(color=RES_KLEUR["Geslaagd"], width=3),
-))
-fig2.add_trace(go.Scatter(
-    x=jaren, y=perc["Afgestroomd"], name="Afgestroomd", mode="lines+markers",
-    line=dict(color=RES_KLEUR["Afgestroomd"], width=3),
-))
-fig2.update_layout(
-    height=380, plot_bgcolor="white", paper_bgcolor="white",
-    yaxis=dict(title="% van cohort", ticksuffix="%"),
-    xaxis=dict(title="Inschrijvingsjaar", dtick=1),
-    font=dict(family="Inter, Segoe UI, sans-serif", color="#1A1A2E"),
-    legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5),
-    margin=dict(t=20, b=40, l=50, r=20),
-)
-st.plotly_chart(fig2, width="stretch")
 
 with st.expander("Toon tabel met percentages"):
     toon = perc.copy()
-    toon.index.name = "Inschrijvingsjaar"
+    toon.index.name = "Startjaar"
     st.dataframe(toon.style.format("{:.1f}%"), width="stretch")
     st.caption(f"Cohortgrootte: {dict(zip(jaren, [int(x) for x in tot]))}")
