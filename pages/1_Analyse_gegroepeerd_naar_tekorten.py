@@ -3,17 +3,8 @@ import plotly.graph_objects as go
 from components.doorstroom_functions import *
 from components.popups import *
 import streamlit as st
-import numpy as np
-import os
-#from streamlit-extras import card
 
-# Mount Google Drive (if running in Colab, this will prompt authentication)
-# In a local Streamlit environment, ensure the file path is accessible.
-# drive.mount('/content/drive')
-
-# --- Functions (copied from notebook) ---
-st.set_page_config(layout="wide")
-st.set_page_config(page_title="Met tekortpunten", page_icon="📈")
+st.set_page_config(layout="wide", page_title="Met tekortpunten", page_icon="📈")
 from components.data import load_data
 from components.styling import apply_styling
 apply_styling()
@@ -217,7 +208,7 @@ if True:
             #         fig = plot_sankey_diagram(labels, source, target, value,
             #                                   title=title_str)
             #         st.write("### Sankey Diagram")
-            #         st.plotly_chart(fig, use_container_width=True)
+            #         st.plotly_chart(fig, width="stretch")
             #     else:
             #         st.warning("Not enough data to generate a Sankey diagram for the selected filters.")
             # else:

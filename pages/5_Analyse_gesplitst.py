@@ -2,12 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
-import os
 from components.helper import *
 
-# Mount Google Drive (if running in Colab, this will prompt authentication)
-# In a local Streamlit environment, ensure the file path is accessible.
-# drive.mount('/content/drive')
 
 # --- Helper Functions ---
 
@@ -495,7 +491,7 @@ if st.button("Run Analysis"):
                             if labels and source and target and value:
                                 sankey_title = f"3-Year Progression: {leerfase_start} ({schooljaar_start}-{schooljaar_eind}) - Category: {category}"
                                 fig = plot_sankey_diagram(labels, source, target, value, title=sankey_title)
-                                st.plotly_chart(fig, use_container_width=True)
+                                st.plotly_chart(fig, width="stretch")
                             else:
                                 st.warning(f"Not enough data to generate a Sankey diagram for '{category}' with the selected filters.")
                         else:

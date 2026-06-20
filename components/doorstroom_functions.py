@@ -82,7 +82,7 @@ def analyze_next_leerfase(df, schooljaar_start, schooljaar_eind, leerfase_start,
     relevant_leerlingnummers = initial_phase_students_df['Leerlingnummer'].unique()
 
     if len(relevant_leerlingnummers) == 0:
-        return pd.Series([], dtype=float), pd.Series([], dtype=int), {}
+        return pd.DataFrame(columns=['Aantallen', 'Percentage'])
 
     # 2. Get ALL records for these relevant students to track their next year's phase
     student_records = df[df['Leerlingnummer'].isin(relevant_leerlingnummers)].copy()
@@ -150,14 +150,14 @@ def analyze_next_leerfase(df, schooljaar_start, schooljaar_eind, leerfase_start,
         return 'Other' # Default for any uncaught cases
 
     if transitions_df.empty:
-        return pd.Series([], dtype=float), pd.Series([], dtype=int), {}
+        return pd.DataFrame(columns=['Aantallen', 'Percentage'])
 
     transitions_df['Progression'] = transitions_df.apply(categorize_progression, axis=1)
 
     # Calculate percentages and counts
     total_students = len(transitions_df)
     if total_students == 0:
-        return pd.Series([], dtype=float), pd.Series([], dtype=int), {}
+        return pd.DataFrame(columns=['Aantallen', 'Percentage'])
 
     progression_counts = transitions_df['Progression'].value_counts()
     progression_percentages = (progression_counts / total_students) * 100

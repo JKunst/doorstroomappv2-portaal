@@ -2,12 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
-import os
 from components.helper import *
 
-# Mount Google Drive (if running in Colab, this will prompt authentication)
-# In a local Streamlit environment, ensure the file path is accessible.
-# drive.mount('/content/drive')
 
 # --- Functions (copied from notebook) ---
 

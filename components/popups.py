@@ -31,15 +31,15 @@ def release_notes():
 def filter_helper():
     st.markdown("""
                 Als je de filters als volgt instelt, selecteer je de leerlingen (voor het eerst) in havo 4 in schooljaar 2022-2023. Je vergelijkt deze met de leerlingen de doublanten in dat jaar h4_doublure:""")
-    st.image("components/input_example.jpg", caption="Voorbeeldinstelling", use_container_width=True)
+    st.image("components/input_example.jpg", caption="Voorbeeldinstelling", width="stretch")
     st.markdown("""Geeft dit de volgende output""")
-    st.image("components/output_example.jpg", caption="Voorbeeldoutput", use_container_width=True)
+    st.image("components/output_example.jpg", caption="Voorbeeldoutput", width="stretch")
 
 
 @st.dialog("Hulp met filters deel 2", width="large")
 def filter_helper_2():
     st.markdown("""
                 Als je de vervolgens gaat kijken naar de leerlingen met 4-6 tekortpunten""")
-    st.image("components/input_example_2.png", caption="Voorbeeldinstelling", use_container_width=True)
+    st.image("components/input_example_2.png", caption="Voorbeeldinstelling", width="stretch")
     st.markdown("""Geeft dit de volgende stromen (2e plaatje)""")
-    st.image("components/output_example_2.png", caption="Doorstroom geselecteerde leerlingen", use_container_width=True)
+    st.image("components/output_example_2.png", caption="Doorstroom geselecteerde leerlingen", width="stretch")

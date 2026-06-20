@@ -1,4 +1,3 @@
-import os
 
 import numpy as np
 import pandas as pd
@@ -165,7 +164,7 @@ if st.button("Run Analysis"):
                 title=f"Doorstroom: {leerfase_start} ({schooljaar_start}-{schooljaar_eind})",
             )
             st.write("### Sankey-diagram")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
 
         st.write("### Details per pad")
         st.dataframe(counts_main.rename("Aantal").reset_index().rename(columns={"index": "Pad"}))

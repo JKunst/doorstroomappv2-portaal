@@ -1,9 +1,7 @@
 import pandas as pd
-import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
-import os
 
 from components.doorstroom_functions import (
     analyze_next_leerfase,
@@ -193,7 +191,7 @@ with map_col:
             bordercolor="#0D5259", borderwidth=1,
         ),
     )
-    st.plotly_chart(fig_map, use_container_width=True)
+    st.plotly_chart(fig_map, width="stretch")
     st.caption(
         "Postcodes 1051 (Amsterdam West), 1106 (Amsterdam Zuidoost) en 8077 (Hulshorst) "
         "liggen buiten het kaartbereik en zijn niet weergegeven."
@@ -289,7 +287,7 @@ with tc1:
         xaxis=dict(title="Schooljaar", dtick=1),
         plot_bgcolor="#FAFAFA", paper_bgcolor="white",
     )
-    st.plotly_chart(fig_trend, use_container_width=True)
+    st.plotly_chart(fig_trend, width="stretch")
     st.caption("Het aandeel APCG-leerlingen groeit gestaag: van ~15% naar ~20%.")
 
 with tc2:
@@ -317,7 +315,7 @@ with tc2:
         legend=dict(orientation="h", yanchor="bottom", y=1),
         plot_bgcolor="#FAFAFA", paper_bgcolor="white",
     )
-    st.plotly_chart(fig_tk, use_container_width=True)
+    st.plotly_chart(fig_tk, width="stretch")
     st.caption("APCG-leerlingen in h4/h5 hebben duidelijk hogere tekortpunten dan niet-APCG.")
 
 st.divider()
@@ -354,7 +352,7 @@ with bc1:
         legend=dict(orientation="h", yanchor="bottom", y=1),
         plot_bgcolor="#FAFAFA", paper_bgcolor="white",
     )
-    st.plotly_chart(fig_bsa, use_container_width=True)
+    st.plotly_chart(fig_bsa, width="stretch")
     st.caption("APCG-leerlingen hebben minder VWO-adviezen en vaker VMBO-adviezen.")
 
 with bc2:
@@ -385,7 +383,7 @@ with bc2:
         legend=dict(orientation="h", yanchor="bottom", y=1),
         plot_bgcolor="#FAFAFA", paper_bgcolor="white",
     )
-    st.plotly_chart(fig_uit, use_container_width=True)
+    st.plotly_chart(fig_uit, width="stretch")
     st.caption("APCG-leerlingen slagen iets minder vaak en verlaten vaker het VO zonder diploma.")
 
 st.divider()
@@ -435,7 +433,7 @@ with ta1:
     st.markdown("**APCG-leerlingen**")
     if not tr_apcg.empty:
         df_a = counts_with_percentages(tr_apcg)
-        st.dataframe(df_a, use_container_width=True)
+        st.dataframe(df_a, width="stretch")
     else:
         st.info("Geen data voor deze selectie.")
 
@@ -443,7 +441,7 @@ with ta2:
     st.markdown("**Niet-APCG-leerlingen**")
     if not tr_niet.empty:
         df_n = counts_with_percentages(tr_niet)
-        st.dataframe(df_n, use_container_width=True)
+        st.dataframe(df_n, width="stretch")
     else:
         st.info("Geen data voor deze selectie.")
 

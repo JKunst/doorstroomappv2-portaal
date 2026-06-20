@@ -1,7 +1,5 @@
 import pandas as pd
 import streamlit as st
-import numpy as np
-import os
 from components.helper import *
 from components.doorstroom_functions import (
     analyze_next_leerfase,
@@ -147,7 +145,7 @@ if updated_df is not None:
                 st.write(f"#### Transitiepaden ({richting}) met Basisschooladvies")
                 st.dataframe(
                     flex_df,
-                    use_container_width=True,
+                    width="stretch",
                     column_config={
                         "Aantal": st.column_config.NumberColumn("Aantal"),
                         "Percentage": st.column_config.TextColumn("Percentage"),
@@ -216,7 +214,7 @@ if updated_df is not None:
         #         st.write(f"#### Transitiepaden ({richting}) met Basisschooladvies")
         #         st.dataframe(
         #             flex_df_v,
-        #             use_container_width=True,
+        #             width="stretch",
         #             column_config={
         #                 "Aantal": st.column_config.NumberColumn("Aantal"),
         #                 "Percentage": st.column_config.TextColumn("Percentage"),
