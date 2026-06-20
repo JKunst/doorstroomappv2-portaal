@@ -124,6 +124,45 @@ with col7:
     </a>
     """, unsafe_allow_html=True)
 
+st.write("")
+
+# ── Rij 3 — Dashboards ───────────────────────────────────────────────────────
+st.markdown("#### 📊 Dashboards")
+col8, col9, col10 = st.columns(3)
+
+with col8:
+    st.markdown("""
+    <a class="card-link" href="Examenresultaten_per_niveau" target="_self">
+        <div class="card">
+            <h3>🎓 Examenresultaten per niveau</h3>
+            <p>Slagen, doubleren en uitstroom in de examenklassen,
+            per cohort en uitgesplitst naar mavo, havo en vwo.</p>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
+
+with col9:
+    st.markdown("""
+    <a class="card-link" href="Onderbouw_doorstroom" target="_self">
+        <div class="card">
+            <h3>📈 Onderbouw doorstroom</h3>
+            <p>Doorstroom, doublure en afstroom per leerjaar in de
+            onderbouw — mavo, havo, vwo en de brugklassen.</p>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
+
+with col10:
+    st.markdown("""
+    <a class="card-link" href="Cohortanalyse_per_startjaar" target="_self">
+        <div class="card">
+            <h3>🧭 Cohortanalyse per startjaar</h3>
+            <p>Volg een startcohort naar de uiteindelijke uitkomst:
+            geslaagd, afgewezen, afgestroomd of vertrokken.</p>
+        </div>
+    </a>
+    """, unsafe_allow_html=True)
+
 st.markdown("---")
 st.button("ℹ️ Wat is nieuw in versie 2.0?", on_click=release_notes)
 
