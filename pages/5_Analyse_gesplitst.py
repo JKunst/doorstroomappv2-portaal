@@ -375,6 +375,7 @@ def plot_sankey_diagram(labels, source, target, value, title="Doorstroom van lee
 st.set_page_config(layout="wide")
 from components.data import load_data
 from components.styling import apply_styling
+from components.doorstroom_functions import examenklas_noot
 apply_styling()
 
 st.title("Selecteer een groep leerlingen om doorstroom te bekijken")
@@ -466,6 +467,7 @@ if st.button("Run Analysis"):
 
                 st.write("### One-Year Progression Counts")
                 st.dataframe(progression_counts.reset_index().rename(columns={'index': 'Progression Category', 0: 'Count'}))
+                examenklas_noot(leerfase_start)
             else:
                 st.info("No one-year transitions found for the selected criteria.")
 

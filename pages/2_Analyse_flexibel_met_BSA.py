@@ -112,6 +112,7 @@ if updated_df is not None:
             if not progression_percentages.empty:
                 st.write("#### Aantallen en percentages (1 jaar vooruit)")
                 st.dataframe(progression_percentages)
+                examenklas_noot(leerfase_start)
             else:
                 st.info("Geen leerlingen gevonden voor deze selectie.")
 

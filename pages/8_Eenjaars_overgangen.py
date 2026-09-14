@@ -182,6 +182,7 @@ def analyze_next_leerfase(df, schooljaar_start, schooljaar_eind, leerfase_start,
 st.set_page_config(layout="wide")
 from components.data import load_data
 from components.styling import apply_styling
+from components.doorstroom_functions import examenklas_noot
 apply_styling()
 
 st.title("Student Leerfase Progression Analysis (One-Year Transitions)") # Updated Title
@@ -299,6 +300,7 @@ if st.button("Run Analysis"):
 
                     st.write(f"### Eenjaars aantallen {leerfase_start}") # New Heading for counts
                     st.dataframe(progression_counts.reset_index().rename(columns={'index': 'Progression Category', 0: 'Count'}))
+                    examenklas_noot(leerfase_start)
                 else:
                     st.info("No transitions found for the selected criteria.")
             with col2:

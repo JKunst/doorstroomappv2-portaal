@@ -42,6 +42,27 @@ df = load_data()
 apcg_df  = df[df["APCG"] == 1]
 niet_df  = df[df["APCG"] == 0]
 
+UITSTROOM_CATS = ["Geslaagd", "MBO", "VO verlater"]
+
+
+def einduitstroom(d: pd.DataFrame) -> pd.Series:
+    """Eén uitkomst per leerling, afgeleid van de laatste rij.
+
+    'Geslaagd' en 'VO verlater' staan in de kolom Doorstroom, 'MBO' in
+    Leerfase (afk). Leerlingen die nog op school zitten of elders/onbekend
+    zijn vertrokken, vallen buiten de einduitstroom.
+    """
+    laatste = d.sort_values("Schooljaar").groupby("Leerlingnummer").tail(1)
+    uit = pd.Series(pd.NA, index=laatste.index, dtype="object")
+    uit[laatste["Doorstroom"] == "Geslaagd"]    = "Geslaagd"
+    uit[laatste["Doorstroom"] == "VO verlater"] = "VO verlater"
+    uit[laatste["Leerfase (afk)"] == "MBO"]     = "MBO"
+    return uit.dropna()
+
+
+uit_a = einduitstroom(apcg_df)
+uit_n = einduitstroom(niet_df)
+
 # ── APCG-postcodes Amersfoort (bron: CBS 2018) ───────────────────────────────
 # Gebaseerd op de officiële CBS-lijst "Armoedeprobleemcumulatiegebieden 2018"
 # (https://www.cbs.nl/nl-nl/maatwerk/2020/52/armoedeprobleem-cumulatie-gebieden-2018)
@@ -209,10 +230,8 @@ with kpi_col:
     gem_tk_apcg = round(apcg_df["Tekortpunten"].mean(), 2)
     gem_tk_niet = round(niet_df["Tekortpunten"].mean(), 2)
 
-    einde_a = apcg_df[apcg_df["Leerfase (afk)"].isin(["Geslaagd","MBO","VO verlater"])]
-    einde_n = niet_df[niet_df["Leerfase (afk)"].isin(["Geslaagd","MBO","VO verlater"])]
-    dip_a = round(len(einde_a[einde_a["Leerfase (afk)"]=="Geslaagd"]) / max(len(einde_a),1) * 100, 1)
-    dip_n = round(len(einde_n[einde_n["Leerfase (afk)"]=="Geslaagd"]) / max(len(einde_n),1) * 100, 1)
+    dip_a = round((uit_a == "Geslaagd").sum() / max(len(uit_a), 1) * 100, 1)
+    dip_n = round((uit_n == "Geslaagd").sum() / max(len(uit_n), 1) * 100, 1)
 
     first_year = df["Schooljaar"].min()
     pct_recent = round(df[df["Schooljaar"]==most_recent]["APCG"].mean() * 100, 1)
@@ -357,11 +376,9 @@ with bc1:
 
 with bc2:
     st.markdown("##### Einduitstroom (Geslaagd / MBO / VO verlater)")
-    uitstroom_cats = ["Geslaagd", "MBO", "VO verlater"]
-    einde_a = apcg_df[apcg_df["Leerfase (afk)"].isin(uitstroom_cats)]
-    einde_n = niet_df[niet_df["Leerfase (afk)"].isin(uitstroom_cats)]
-    pct_a = (einde_a["Leerfase (afk)"].value_counts(normalize=True) * 100).reindex(uitstroom_cats, fill_value=0)
-    pct_n = (einde_n["Leerfase (afk)"].value_counts(normalize=True) * 100).reindex(uitstroom_cats, fill_value=0)
+    uitstroom_cats = UITSTROOM_CATS
+    pct_a = (uit_a.value_counts(normalize=True) * 100).reindex(uitstroom_cats, fill_value=0)
+    pct_n = (uit_n.value_counts(normalize=True) * 100).reindex(uitstroom_cats, fill_value=0)
 
     fig_uit = go.Figure()
     fig_uit.add_trace(go.Bar(
@@ -384,7 +401,11 @@ with bc2:
         plot_bgcolor="#FAFAFA", paper_bgcolor="white",
     )
     st.plotly_chart(fig_uit, width="stretch")
-    st.caption("APCG-leerlingen slagen iets minder vaak en verlaten vaker het VO zonder diploma.")
+    st.caption(
+        f"Eén uitkomst per leerling (laatste schooljaar); n = {len(uit_a)} APCG en "
+        f"{len(uit_n)} niet-APCG. Leerlingen die nog op school zitten of elders/onbekend "
+        "vertrokken zijn tellen niet mee."
+    )
 
 st.divider()
 

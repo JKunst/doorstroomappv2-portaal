@@ -120,6 +120,7 @@ if True:
                 if not flex_transition_counts.empty:
                     st.write("#### Aantallen en percentages")
                     st.dataframe(progression_percentages)
+                    examenklas_noot(leerfase_start)
                     df_flex = counts_with_percentages(flex_transition_counts)
                     richting = (
                         f"1 jaar terug + {jaren_vooruit} jaar vooruit"

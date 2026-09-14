@@ -5,3 +5,7 @@ __pycache__/
 !.env.example
 venv/
 .streamlit/secrets.toml
+
+# Leerlingdata: nooit in git, staat los op de server
+updated_df.xlsx
+*.xlsx

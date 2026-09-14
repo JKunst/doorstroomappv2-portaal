@@ -4,6 +4,20 @@ import plotly.graph_objects as go
 import numpy as np
 import os
 
+EXAMENFASES = ("t4", "h5", "v6")
+
+
+def examenklas_noot(leerfase_start):
+    """Toon bij een examenklas waarom geslaagden in de eenjaars-tabel ontbreken."""
+    if str(leerfase_start).replace("_doublure", "") in EXAMENFASES:
+        st.caption(
+            "Let op: geslaagde leerlingen hebben in de data geen rij voor het volgende "
+            "schooljaar en ontbreken daarom in deze eenjaars-tabel — die toont alleen "
+            "doublures, afgewezenen en overstappers. Slagingspercentages staan op de "
+            "pagina Examenresultaten per niveau."
+        )
+
+
 def _get_leerfase_numeric_value(leerfase_str):
     """
     Assigns a numerical value to each 'Leerfase (afk)' for comparison.
